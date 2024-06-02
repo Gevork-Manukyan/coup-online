@@ -1,6 +1,6 @@
 import React from 'react';
 
-const BlockChallengeDecision = ({ counterAction, prevAction, closeOtherVotes, socket, doneBlockChallengeVote, name }) => {
+function BlockChallengeDecision({ counterAction, prevAction, closeOtherVotes, socket, doneBlockChallengeVote, name }) {
 
     const vote = (isChallenging) => {
         closeOtherVotes('challenge-block');

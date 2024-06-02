@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ActionDecision = ({ name, socket, doneAction, money, deductCoins, players }) => {
+function ActionDecision({ name, socket, doneAction, money, deductCoins, players }) {
     const [isDecisionMade, setIsDecisionMade] = useState(false);
     const [decision, setDecision] = useState('');
     const [isPickingTarget, setIsPickingTarget] = useState(false);

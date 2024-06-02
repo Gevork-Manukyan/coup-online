@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const BlockDecision = ({ name, socket, doneAction, closeOtherVotes, action, doneBlockVote }) => {
+function BlockDecision({ name, socket, doneAction, closeOtherVotes, action, doneBlockVote }) {
     const [isDecisionMade, setIsDecisionMade] = useState(false);
     const [decision, setDecision] = useState('');
     const [isPickingClaim, setIsPickingClaim] = useState(false);

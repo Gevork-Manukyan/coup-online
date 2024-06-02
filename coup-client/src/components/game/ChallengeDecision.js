@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ChallengeDecision = ({ action, name, socket, doneChallengeVote, closeOtherVotes }) => {
+function ChallengeDecision({ action, name, socket, doneChallengeVote, closeOtherVotes }) {
 
     const vote = (isChallenging) => {
         closeOtherVotes('challenge');
