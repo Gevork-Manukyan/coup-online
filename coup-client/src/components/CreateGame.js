@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import io from "socket.io-client";
 import { ReactSortable } from "react-sortablejs";
-import Coup from "./game/Coup";
+import Coup from "./Game/Coup/Coup";
 import axios from "axios";
 
 const baseUrl = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";

@@ -1,5 +1,5 @@
+import './PlayerBoard.css';
 import React from 'react';
-import './PlayerBoardStyles.css';
 
 function PlayerBoard({ players }) {
     let boardItems = null;
