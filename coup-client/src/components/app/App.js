@@ -1,6 +1,5 @@
 import React from 'react';
-import logo from './logo.svg';
-import CreateGame from './components/CreateGame';
+import CreateGame from '../CreateGame';
 import './App.css';
 import ReactGA from 'react-ga';
 
@@ -8,10 +7,9 @@ import {
   BrowserRouter as Router,
   Switch,
   Route,
-  Link
 } from "react-router-dom";
-import JoinGame from './components/JoinGame';
-import Home from './components/Home';
+import JoinGame from '../JoinGame';
+import Home from '../Home';
 
 const trackingId = process.env.REACT_APP_GOOGLE_TRACKING_ID || '';
 ReactGA.initialize(trackingId);
