@@ -1,29 +1,29 @@
-import React, { Component } from 'react'
+import React from 'react';
 
-export default class BlockChallengeDecision extends Component {
+const BlockChallengeDecision = ({ counterAction, prevAction, closeOtherVotes, socket, doneBlockChallengeVote, name }) => {
 
-    vote = (isChallenging) => {
-        this.props.closeOtherVotes('challenge-block')
+    const vote = (isChallenging) => {
+        closeOtherVotes('challenge-block');
 
         const res = {
-            counterAction: this.props.counterAction,
-            prevAction: this.props.prevAction,
+            counterAction,
+            prevAction,
             isChallenging,
-            challengee: this.props.counterAction.source,
-            challenger: this.props.name
-        }
-        console.log(res)
-        this.props.socket.emit('g-blockChallengeDecision', res);
-        this.props.doneBlockChallengeVote();
-    }
+            challengee: counterAction.source,
+            challenger: name
+        };
+        console.log(res);
+        socket.emit('g-blockChallengeDecision', res);
+        doneBlockChallengeVote();
+    };
 
-    render() {
-        return (
-            <>
-                <p>{this.props.counterAction.source} is trying to block {this.props.prevAction.action} from {this.props.prevAction.source} as {this.props.counterAction.claim}</p>
-                <button onClick={() => this.vote(true)}>Challenge</button>
-                {/* <button onClick={() => this.vote(false)}>Pass</button> */}
-            </>
-        )
-    }
-}
+    return (
+        <>
+            <p>{counterAction.source} is trying to block {prevAction.action} from {prevAction.source} as {counterAction.claim}</p>
+            <button onClick={() => vote(true)}>Challenge</button>
+            {/* <button onClick={() => vote(false)}>Pass</button> */}
+        </>
+    );
+};
+
+export default BlockChallengeDecision;
