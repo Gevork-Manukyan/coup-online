@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { useState, useEffect } from 'react';
 import ActionDecision from './ActionDecision';
 import ChallengeDecision from './ChallengeDecision';
 import BlockChallengeDecision from './BlockChallengeDecision';
@@ -13,334 +13,341 @@ import ReactModal from 'react-modal';
 import CheatSheetModal from '../CheatSheetModal';
 import RulesModal from '../RulesModal';
 
-export default class Coup extends Component {
+function Coup({ name, socket }) {
+    const [state, setState] = useState({
+        action: null,
+        blockChallengeRes: null,
+        players: [],
+        playerIndex: null,
+        currentPlayer: '',
+        isChooseAction: false,
+        revealingRes: null,
+        blockingAction: null,
+        isChoosingInfluence: false,
+        exchangeInfluence: null,
+        error: '',
+        winner: '',
+        playAgain: null,
+        logs: [],
+        isDead: false,
+        waiting: true,
+        disconnected: false
+    });
 
-    constructor(props) {
-        super(props)
-    
-        this.state = {
-             action: null,
-             blockChallengeRes: null,
-             players: [],
-             playerIndex: null,
-             currentPlayer: '',
-             isChooseAction: false,
-             revealingRes: null,
-             blockingAction: null,
-             isChoosingInfluence: false,
-             exchangeInfluence: null,
-             error: '',
-             winner: '',
-             playAgain: null,
-             logs: [],
-             isDead: false,
-             waiting: true,
-             disconnected: false
-        }
-        const bind = this;
+    useEffect(() => {
+        const playAgainButton = (
+            <>
+                <br></br>
+                <button className="startGameButton" onClick={() => socket.emit('g-playAgain')}>
+                    Play Again
+                </button>
+            </>
+        );
 
-        this.playAgainButton = <>
-        <br></br>
-        <button className="startGameButton" onClick={() => {
-            this.props.socket.emit('g-playAgain');
-        }}>Play Again</button>
-        </>
-
-        this.props.socket.on('disconnect', reason => {
-            this.setState({ disconnected: true });
-        })
-
-        this.props.socket.on('g-gameOver', (winner) => {
-            bind.setState({winner: `${winner} Wins!`})
-            bind.setState({playAgain: bind.playAgainButton})
-        })
-        this.props.socket.on('g-updatePlayers', (players) => {
-            bind.setState({playAgain: null})
-            bind.setState({winner: null})
+        const handleDisconnect = () => setState(prev => ({ ...prev, disconnected: true }));
+        const handleGameOver = (winner) => {
+            setState(prev => ({ ...prev, winner: `${winner} Wins!`, playAgain: playAgainButton }));
+        };
+        const handleUpdatePlayers = (players) => {
             players = players.filter(x => !x.isDead);
             let playerIndex = null;
-            for(let i = 0; i < players.length; i++) {
-                console.log(players[i].name, this.props.name)
-                if(players[i].name === this.props.name) {
+            for (let i = 0; i < players.length; i++) {
+                if (players[i].name === name) {
                     playerIndex = i;
                     break;
                 }
             }
-            if(playerIndex == null) {
-                this.setState({ isDead: true })
-            }else {
-                this.setState({ isDead: false})
+            if (playerIndex == null) {
+                setState(prev => ({ ...prev, isDead: true }));
+            } else {
+                setState(prev => ({ ...prev, isDead: false }));
             }
-            console.log(playerIndex)
-            bind.setState({playerIndex, players});
-            
-        });
-        this.props.socket.on('g-updateCurrentPlayer', (currentPlayer) => {
-            console.log('currentPlayer: ', currentPlayer)
-            bind.setState({ currentPlayer });
-        });
-        this.props.socket.on('g-addLog', (log) => {
-            let splitLog=  log.split(' ');
-            let coloredLog = [];
-            coloredLog = splitLog.map((item, index) => {
-                let found = null
-                bind.state.players.forEach(player => {
-                    if(item === player.name){
-                        found = <b style={{color: player.color}}>{player.name} </b>;
+            setState(prev => ({ ...prev, playerIndex, players, playAgain: null, winner: null }));
+        };
+        const handleUpdateCurrentPlayer = (currentPlayer) => {
+            setState(prev => ({ ...prev, currentPlayer }));
+        };
+        const handleAddLog = (log) => {
+            let splitLog = log.split(' ');
+            let coloredLog = splitLog.map((item, index) => {
+                let found = null;
+                state.players.forEach(player => {
+                    if (item === player.name) {
+                        found = <b style={{ color: player.color }}>{player.name} </b>;
                     }
-                })
-                if(found){
+                });
+                if (found) {
                     return found;
                 }
-                return <>{item+' '}</>
-            })
-            bind.state.logs = [...bind.state.logs, coloredLog]
-            bind.setState({logs :bind.state.logs})
-        })
-        this.props.socket.on('g-chooseAction', () => {        
-            bind.setState({ isChooseAction: true})
-        });
-        this.props.socket.on('g-openExchange', (drawTwo) => {
-            let influences = [...bind.state.players[bind.state.playerIndex].influences, ...drawTwo];
-            bind.setState({ exchangeInfluence: influences });
-        })
-        this.props.socket.on('g-openChallenge', (action) => {
-            if(this.state.isDead) {
-                return
+                return <>{item + ' '}</>;
+            });
+            setState(prev => ({ ...prev, logs: [...prev.logs, coloredLog] }));
+        };
+        const handleChooseAction = () => setState(prev => ({ ...prev, isChooseAction: true }));
+        const handleOpenExchange = (drawTwo) => {
+            let influences = [...state.players[state.playerIndex].influences, ...drawTwo];
+            setState(prev => ({ ...prev, exchangeInfluence: influences }));
+        };
+        const handleOpenChallenge = (action) => {
+            if (state.isDead) {
+                return;
             }
-            if(action.source !== bind.props.name) {
-               bind.setState({ action }) 
+            if (action.source !== name) {
+                setState(prev => ({ ...prev, action }));
             } else {
-                bind.setState({ action: null }) 
+                setState(prev => ({ ...prev, action: null }));
             }
-        });
-        this.props.socket.on('g-openBlockChallenge', (blockChallengeRes) => {
-            if(this.state.isDead) {
-                return
+        };
+        const handleOpenBlockChallenge = (blockChallengeRes) => {
+            if (state.isDead) {
+                return;
             }
-            if(blockChallengeRes.counterAction.source !== bind.props.name) {
-               bind.setState({ blockChallengeRes }) 
+            if (blockChallengeRes.counterAction.source !== name) {
+                setState(prev => ({ ...prev, blockChallengeRes }));
             } else {
-                bind.setState({ blockChallengeRes: null }) 
+                setState(prev => ({ ...prev, blockChallengeRes: null }));
             }
-        });
-        this.props.socket.on('g-openBlock', (action) => {
-            if(this.state.isDead) {
-                return
+        };
+        const handleOpenBlock = (action) => {
+            if (state.isDead) {
+                return;
             }
-            if(action.source !== bind.props.name) {
-                bind.setState({ blockingAction: action })
-             } else {
-                 bind.setState({ blockingAction: null }) 
-             }
-        });
-        this.props.socket.on('g-chooseReveal', (res) => {
-            console.log(res)
-            bind.setState({ revealingRes: res});
-        });
-        this.props.socket.on('g-chooseInfluence', () => {
-            bind.setState({ isChoosingInfluence: true });
-        });
-        this.props.socket.on('g-closeChallenge', () => {
-            bind.setState({ action: null });
-        });
-        this.props.socket.on('g-closeBlock', () => {
-            bind.setState({ blockingAction: null });
-        });
-        this.props.socket.on('g-closeBlockChallenge', () => {
-            bind.setState({ blockChallengeRes: null });
-        });
-    }
+            if (action.source !== name) {
+                setState(prev => ({ ...prev, blockingAction: action }));
+            } else {
+                setState(prev => ({ ...prev, blockingAction: null }));
+            }
+        };
+        const handleChooseReveal = (res) => {
+            setState(prev => ({ ...prev, revealingRes: res }));
+        };
+        const handleChooseInfluence = () => setState(prev => ({ ...prev, isChoosingInfluence: true }));
+        const handleCloseChallenge = () => setState(prev => ({ ...prev, action: null }));
+        const handleCloseBlock = () => setState(prev => ({ ...prev, blockingAction: null }));
+        const handleCloseBlockChallenge = () => setState(prev => ({ ...prev, blockChallengeRes: null }));
 
-    deductCoins = (amount) => {
+        socket.on('disconnect', handleDisconnect);
+        socket.on('g-gameOver', handleGameOver);
+        socket.on('g-updatePlayers', handleUpdatePlayers);
+        socket.on('g-updateCurrentPlayer', handleUpdateCurrentPlayer);
+        socket.on('g-addLog', handleAddLog);
+        socket.on('g-chooseAction', handleChooseAction);
+        socket.on('g-openExchange', handleOpenExchange);
+        socket.on('g-openChallenge', handleOpenChallenge);
+        socket.on('g-openBlockChallenge', handleOpenBlockChallenge);
+        socket.on('g-openBlock', handleOpenBlock);
+        socket.on('g-chooseReveal', handleChooseReveal);
+        socket.on('g-chooseInfluence', handleChooseInfluence);
+        socket.on('g-closeChallenge', handleCloseChallenge);
+        socket.on('g-closeBlock', handleCloseBlock);
+        socket.on('g-closeBlockChallenge', handleCloseBlockChallenge);
+
+        return () => {
+            socket.off('disconnect', handleDisconnect);
+            socket.off('g-gameOver', handleGameOver);
+            socket.off('g-updatePlayers', handleUpdatePlayers);
+            socket.off('g-updateCurrentPlayer', handleUpdateCurrentPlayer);
+            socket.off('g-addLog', handleAddLog);
+            socket.off('g-chooseAction', handleChooseAction);
+            socket.off('g-openExchange', handleOpenExchange);
+            socket.off('g-openChallenge', handleOpenChallenge);
+            socket.off('g-openBlockChallenge', handleOpenBlockChallenge);
+            socket.off('g-openBlock', handleOpenBlock);
+            socket.off('g-chooseReveal', handleChooseReveal);
+            socket.off('g-chooseInfluence', handleChooseInfluence);
+            socket.off('g-closeChallenge', handleCloseChallenge);
+            socket.off('g-closeBlock', handleCloseBlock);
+            socket.off('g-closeBlockChallenge', handleCloseBlockChallenge);
+        };
+    }, [socket, name, state.isDead, state.players, state.playerIndex]);
+
+    function deductCoins(amount) {
         let res = {
-            source: this.props.name,
+            source: name,
             amount: amount
-        }
-        this.props.socket.emit('g-deductCoins', res);
+        };
+        socket.emit('g-deductCoins', res);
     }
 
-    doneAction = () => {
-        this.setState({ 
-            isChooseAction: false
-        })
+    function doneAction() {
+        setState(prev => ({ ...prev, isChooseAction: false }));
     }
-    doneChallengeBlockingVote = () => {
-        this.setState({ action: null }); //challemge
-        this.setState({ blockChallengeRes: null}); //challenge a block
-        this.setState({ blockingAction: null }); //block
+
+    function doneChallengeBlockingVote() {
+        setState(prev => ({ ...prev, action: null, blockChallengeRes: null, blockingAction: null }));
     }
-    closeOtherVotes = (voteType) => {
-        if(voteType === 'challenge') {
-            this.setState({ blockChallengeRes: null}); //challenge a block
-            this.setState({ blockingAction: null }); //block
-        }else if(voteType === 'block') {
-            this.setState({ action: null }); //challemge
-            this.setState({ blockChallengeRes: null}); //challenge a block
-        }else if(voteType === 'challenge-block') {
-            this.setState({ action: null }); //challemge
-            this.setState({ blockingAction: null }); //block
+
+    function closeOtherVotes(voteType) {
+        if (voteType === 'challenge') {
+            setState(prev => ({ ...prev, blockChallengeRes: null, blockingAction: null }));
+        } else if (voteType === 'block') {
+            setState(prev => ({ ...prev, action: null, blockChallengeRes: null }));
+        } else if (voteType === 'challenge-block') {
+            setState(prev => ({ ...prev, action: null, blockingAction: null }));
         }
     }
-    doneReveal = () => {
-        this.setState({ revealingRes: null });
+
+    function doneReveal() {
+        setState(prev => ({ ...prev, revealingRes: null }));
     }
-    doneChooseInfluence = () => {
-        this.setState({ isChoosingInfluence: false })
+
+    function doneChooseInfluence() {
+        setState(prev => ({ ...prev, isChoosingInfluence: false }));
     }
-    doneExchangeInfluence = () => {
-        this.setState({ exchangeInfluence: null })
+
+    function doneExchangeInfluence() {
+        setState(prev => ({ ...prev, exchangeInfluence: null }));
     }
-    pass = () => {
-        if(this.state.action != null) { //challengeDecision
+
+    function pass() {
+        if (state.action != null) {
             let res = {
                 isChallenging: false,
-                action: this.state.action
-            }
-            console.log(res)
-            this.props.socket.emit('g-challengeDecision', res);
-        }else if(this.state.blockChallengeRes != null) { //BlockChallengeDecision
+                action: state.action
+            };
+            socket.emit('g-challengeDecision', res);
+        } else if (state.blockChallengeRes != null) {
             let res = {
                 isChallenging: false
-            }
-            console.log(res)
-            this.props.socket.emit('g-blockChallengeDecision', res);
-        }else if(this.state.blockingAction !== null) { //BlockDecision
+            };
+            socket.emit('g-blockChallengeDecision', res);
+        } else if (state.blockingAction !== null) {
             const res = {
-                action: this.state.blockingAction,
+                action: state.blockingAction,
                 isBlocking: false
-            }
-            console.log(res)
-            this.props.socket.emit('g-blockDecision', res)
+            };
+            socket.emit('g-blockDecision', res);
         }
-        this.doneChallengeBlockingVote();
+        doneChallengeBlockingVote();
     }
 
-    influenceColorMap = {
+    const influenceColorMap = {
         duke: '#D55DC7',
         captain: '#80C6E5',
         assassin: '#2B2B2B',
         contessa: '#E35646',
         ambassador: '#B4CA1F'
+    };
+
+    let actionDecision = null;
+    let currentPlayer = null;
+    let revealDecision = null;
+    let challengeDecision = null;
+    let blockChallengeDecision = null;
+    let chooseInfluenceDecision = null;
+    let blockDecision = null;
+    let influences = null;
+    let passButton = null;
+    let coins = null;
+    let exchangeInfluences = null;
+    let playAgain = null;
+    let isWaiting = true;
+    let waiting = null;
+
+    if (state.isChooseAction && state.playerIndex != null) {
+        isWaiting = false;
+        actionDecision = <ActionDecision doneAction={doneAction} deductCoins={deductCoins} name={name} socket={socket} money={state.players[state.playerIndex].money} players={state.players}></ActionDecision>;
     }
-    
-    render() {
-        let actionDecision = null
-        let currentPlayer = null
-        let revealDecision = null
-        let challengeDecision = null
-        let blockChallengeDecision = null
-        let chooseInfluenceDecision = null
-        let blockDecision = null
-        let influences = null
-        let pass = null
-        let coins = null
-        let exchangeInfluences = null
-        let playAgain = null
-        let isWaiting = true
-        let waiting = null
-        if(this.state.isChooseAction && this.state.playerIndex != null) {
-            isWaiting = false;
-            actionDecision = <ActionDecision doneAction={this.doneAction} deductCoins={this.deductCoins} name={this.props.name} socket={this.props.socket} money={this.state.players[this.state.playerIndex].money} players={this.state.players}></ActionDecision>
-        }
-        if(this.state.currentPlayer) {
-            currentPlayer = <p>It is <b>{this.state.currentPlayer}</b>'s turn</p>
-        }
-        if(this.state.revealingRes) {
-            isWaiting = false;
-            revealDecision = <RevealDecision doneReveal={this.doneReveal} name ={this.props.name} socket={this.props.socket} res={this.state.revealingRes} influences={this.state.players.filter(x => x.name === this.props.name)[0].influences}></RevealDecision>
-        }
-        if(this.state.isChoosingInfluence) {
-            isWaiting = false;
-            chooseInfluenceDecision = <ChooseInfluence doneChooseInfluence={this.doneChooseInfluence} name ={this.props.name} socket={this.props.socket} influences={this.state.players.filter(x => x.name === this.props.name)[0].influences}></ChooseInfluence>
-        }
-        if(this.state.action != null || this.state.blockChallengeRes != null || this.state.blockingAction !== null){
-            pass = <button onClick={() => this.pass()}>Pass</button>
-        }
-        if(this.state.action != null) {
-            isWaiting = false;
-            challengeDecision = <ChallengeDecision closeOtherVotes={this.closeOtherVotes} doneChallengeVote={this.doneChallengeBlockingVote} name={this.props.name} action={this.state.action} socket={this.props.socket} ></ChallengeDecision>
-        }
-        if(this.state.exchangeInfluence) {
-            isWaiting = false;
-            exchangeInfluences = <ExchangeInfluences doneExchangeInfluence={this.doneExchangeInfluence} name={this.props.name} influences={this.state.exchangeInfluence} socket={this.props.socket}></ExchangeInfluences>
-        }
-        if(this.state.blockChallengeRes != null) {
-            isWaiting = false;
-            blockChallengeDecision = <BlockChallengeDecision closeOtherVotes={this.closeOtherVotes} doneBlockChallengeVote={this.doneChallengeBlockingVote} name={this.props.name} prevAction={this.state.blockChallengeRes.prevAction} counterAction={this.state.blockChallengeRes.counterAction} socket={this.props.socket} ></BlockChallengeDecision>
-        }
-        if(this.state.blockingAction !== null) {
-            isWaiting = false;
-            blockDecision = <BlockDecision closeOtherVotes={this.closeOtherVotes} doneBlockVote={this.doneChallengeBlockingVote} name={this.props.name} action={this.state.blockingAction} socket={this.props.socket} ></BlockDecision>
-        }
-        if(this.state.playerIndex != null && !this.state.isDead) {
-            influences = <>
-            <p>Your Influences</p>
-                {this.state.players[this.state.playerIndex].influences.map((influence, index) => {
-                    return  <div key={index} className="InfluenceUnitContainer">
-                                <span className="circle" style={{backgroundColor: `${this.influenceColorMap[influence]}`}}></span>
-                                <br></br>
-                                <h3>{influence}</h3>
-                            </div>
-                    })
-                }
-            </>
-            
-            coins = <p>Coins: {this.state.players[this.state.playerIndex].money}</p>
-        }
-        if(isWaiting && !this.state.isDead) {
-            waiting = <p>Waiting for other players...</p>
-        }
-        if(this.state.disconnected) {
-            return (
-                <div className="GameContainer">
-                    <div className="GameHeader">
-                        <div className="PlayerInfo">
-                            <p>You are: {this.props.name}</p>
-                            {coins}
-                        </div>
-                        <RulesModal/>
-                        <CheatSheetModal/>
+    if (state.currentPlayer) {
+        currentPlayer = <p>It is <b>{state.currentPlayer}</b>'s turn</p>;
+    }
+    if (state.revealingRes) {
+        isWaiting = false;
+        revealDecision = <RevealDecision doneReveal={doneReveal} name={name} socket={socket} res={state.revealingRes} influences={state.players.filter(x => x.name === name)[0].influences}></RevealDecision>;
+    }
+    if (state.isChoosingInfluence) {
+        isWaiting = false;
+        chooseInfluenceDecision = <ChooseInfluence doneChooseInfluence={doneChooseInfluence} name={name} socket={socket} influences={state.players.filter(x => x.name === name)[0].influences}></ChooseInfluence>;
+    }
+    if (state.action != null || state.blockChallengeRes != null || state.blockingAction !== null) {
+        passButton = <button onClick={() => pass()}>Pass</button>;
+    }
+    if (state.action != null) {
+        isWaiting = false;
+        challengeDecision = <ChallengeDecision closeOtherVotes={closeOtherVotes} doneChallengeVote={doneChallengeBlockingVote} name={name} action={state.action} socket={socket}></ChallengeDecision>;
+    }
+    if (state.exchangeInfluence) {
+        isWaiting = false;
+        exchangeInfluences = <ExchangeInfluences doneExchangeInfluence={doneExchangeInfluence} name={name} influences={state.exchangeInfluence} socket={socket}></ExchangeInfluences>;
+    }
+    if (state.blockChallengeRes != null) {
+        isWaiting = false;
+        blockChallengeDecision = <BlockChallengeDecision closeOtherVotes={closeOtherVotes} doneBlockChallengeVote={doneChallengeBlockingVote} name={name} prevAction={state.blockChallengeRes.prevAction} counterAction={state.blockChallengeRes.counterAction} socket={socket}></BlockChallengeDecision>;
+    }
+    if (state.blockingAction !== null) {
+        isWaiting = false;
+        blockDecision = <BlockDecision closeOtherVotes={closeOtherVotes} doneBlockVote={doneChallengeBlockingVote} name={name} action={state.blockingAction} socket={socket}></BlockDecision>;
+    }
+    if (state.playerIndex != null && !state.isDead) {
+        influences = (
+            <>
+                <p>Your Influences</p>
+                {state.players[state.playerIndex].influences.map((influence, index) => (
+                    <div key={index} className="InfluenceUnitContainer">
+                        <span className="circle" style={{ backgroundColor: `${influenceColorMap[influence]}` }}></span>
+                        <br></br>
+                        <h3>{influence}</h3>
                     </div>
-                    <p>You have been disconnected :c</p>
-                    <p>Please recreate the game.</p>
-                    <p>Sorry for the inconvenience (シ_ _)シ</p>
-                </div>
-            )
-        }
+                ))}
+            </>
+        );
+
+        coins = <p>Coins: {state.players[state.playerIndex].money}</p>;
+    }
+    if (isWaiting && !state.isDead) {
+        waiting = <p>Waiting for other players...</p>;
+    }
+    if (state.disconnected) {
         return (
             <div className="GameContainer">
                 <div className="GameHeader">
                     <div className="PlayerInfo">
-                        <p>You are: {this.props.name}</p>
+                        <p>You are: {name}</p>
                         {coins}
                     </div>
-                    <div className="CurrentPlayer">
-                        {currentPlayer}
-                    </div>
-                    <RulesModal/>
-                    <CheatSheetModal/>
-                    <EventLog logs={this.state.logs}></EventLog>
+                    <RulesModal />
+                    <CheatSheetModal />
                 </div>
-                <div className="InfluenceSection">
-                    {influences}
-                </div>
-                <PlayerBoard players={this.state.players}></PlayerBoard>
-                <div className="DecisionsSection">
-                    {waiting}
-                    {revealDecision}
-                    {chooseInfluenceDecision}
-                    {actionDecision}
-                    {exchangeInfluences}
-                    {challengeDecision}
-                    {blockChallengeDecision}
-                    {blockDecision}
-                    {pass}
-                    {playAgain}
-                </div>
-                <b>{this.state.winner}</b>
-                {this.state.playAgain}
+                <p>You have been disconnected :c</p>
+                <p>Please recreate the game.</p>
+                <p>Sorry for the inconvenience (シ_ _)シ</p>
             </div>
-        )
+        );
     }
+    return (
+        <div className="GameContainer">
+            <div className="GameHeader">
+                <div className="PlayerInfo">
+                    <p>You are: {name}</p>
+                    {coins}
+                </div>
+                <div className="CurrentPlayer">
+                    {currentPlayer}
+                </div>
+                <RulesModal />
+                <CheatSheetModal />
+                <EventLog logs={state.logs}></EventLog>
+            </div>
+            <div className="InfluenceSection">
+                {influences}
+            </div>
+            <PlayerBoard players={state.players}></PlayerBoard>
+            <div className="DecisionsSection">
+                {waiting}
+                {revealDecision}
+                {chooseInfluenceDecision}
+                {actionDecision}
+                {exchangeInfluences}
+                {challengeDecision}
+                {blockChallengeDecision}
+                {blockDecision}
+                {passButton}
+                {playAgain}
+            </div>
+            <b>{state.winner}</b>
+            {state.playAgain}
+        </div>
+    );
 }
+
+export default Coup;
