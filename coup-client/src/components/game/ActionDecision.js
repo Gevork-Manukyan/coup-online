@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
 function ActionDecision({ name, socket, doneAction, money, deductCoins, players }) {
-    const [isDecisionMade, setIsDecisionMade] = useState(false);
-    const [decision, setDecision] = useState('');
+    // const [isDecisionMade, setIsDecisionMade] = useState(false);
+    // const [decision, setDecision] = useState('');
     const [isPickingTarget, setIsPickingTarget] = useState(false);
     const [targetAction, setTargetAction] = useState('');
     const [actionError, setActionError] = useState('');

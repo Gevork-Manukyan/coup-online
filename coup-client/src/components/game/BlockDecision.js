@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 
 function BlockDecision({ name, socket, doneAction, closeOtherVotes, action, doneBlockVote }) {
-    const [isDecisionMade, setIsDecisionMade] = useState(false);
+    // const [isDecisionMade, setIsDecisionMade] = useState(false);
     const [decision, setDecision] = useState('');
     const [isPickingClaim, setIsPickingClaim] = useState(false);
 
-    const chooseAction = (action, target = null) => {
-        const res = {
-            action: {
-                action: action,
-                target: target,
-                source: name
-            }
-        };
-        console.log(res);
+    // const chooseAction = (action, target = null) => {
+    //     const res = {
+    //         action: {
+    //             action: action,
+    //             target: target,
+    //             source: name
+    //         }
+    //     };
+    //     console.log(res);
         
-        socket.emit('g-actionDecision', res);
-        doneAction();
-    };
+    //     socket.emit('g-actionDecision', res);
+    //     doneAction();
+    // };
 
     const block = (block, claim = null) => {
         closeOtherVotes('block');
@@ -49,15 +49,15 @@ function BlockDecision({ name, socket, doneAction, closeOtherVotes, action, done
         doneBlockVote();
     };
 
-    const pass = () => {
-        const res = {
-            action: action,
-            isBlocking: false
-        };
-        console.log(res);
-        socket.emit('g-blockDecision', res);
-        doneBlockVote();
-    };
+    // const pass = () => {
+    //     const res = {
+    //         action: action,
+    //         isBlocking: false
+    //     };
+    //     console.log(res);
+    //     socket.emit('g-blockDecision', res);
+    //     doneBlockVote();
+    // };
 
     const pickClaim = (block) => {
         closeOtherVotes('block');
